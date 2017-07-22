@@ -6,12 +6,64 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net"
+	"net/mail"
 	"net/smtp"
+	"os/exec"
+	"strings"
+	"time"
+
+	"github.com/BurntSushi/toml"
 )
 
+type serverConfig struct {
+	Ports    []int
+	Location string
+	Created  time.Time
+}
+
+type server struct {
+	IP     string       `toml:"ip,omitempty"`
+	Config serverConfig `toml:"config"`
+}
+
+type servers map[string]server
+
 func main() {
+	var tomlBlob = `
+# Some comments.
+[alpha]
+ip = "10.0.0.1"
+
+	[alpha.config]
+	Ports = [ 8001, 8002 ]
+	Location = "Toronto"
+	Created = 1987-07-05T05:45:00Z
+
+[beta]
+ip = "10.0.0.2"
+
+	[beta.config]
+	Ports = [ 9001, 9002 ]
+	Location = "New Jersey"
+	Created = 1887-01-05T05:55:00Z
+`
+
+	var config servers
+	if _, err := toml.Decode(tomlBlob, &config); err != nil {
+		log.Fatal(err)
+	}
+
+	for _, name := range []string{"alpha", "beta"} {
+		s := config[name]
+		fmt.Printf("Server: %s (ip: %s) in %s created on %s\n",
+			name, s.IP, s.Config.Location,
+			s.Config.Created.Format("2006-01-02"))
+		fmt.Printf("Ports: %v\n", s.Config.Ports)
+	}
+
 	servername := "mail.messagingengine.com:587"
 	// servername := "smtp.nps.edu:587"
 	// servername := "email-smtp.us-west-2.amazonaws.com:587"
@@ -47,6 +99,12 @@ CwUAA4IBAQAjPt9L0jFCpbZ+QlwaRMxp0Wi0XUvgBCFsS+JtzLHgl4+mUwnNqipl
 c+LJMto4JQtV05od8GiG7S5BNO98pVAdvzr508EIDObtHopYJeS4d60tbvVS3bR0
 j6tJLp07kzQoH3jOlOrHvdPJbRzeXDLz
 -----END CERTIFICATE-----`
+
+	out, err := exec.Command("date").Output()
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Printf("The date is %s\n", out)
 
 	// First, create the set of root certificates. For this example we only
 	// have one. It's also possible to omit this in order to use the
@@ -97,6 +155,7 @@ j6tJLp07kzQoH3jOlOrHvdPJbRzeXDLz
 		hash.Write(cert.Raw)
 		fingerprint := fmt.Sprintf("%X", hash.Sum(nil))
 		fmt.Printf("SHA-256 Fingerprint:\n %s\n", fingerprint)
+
 		pemBlock := pem.Block{
 			Type:  "CERTIFICATE",
 			Bytes: cert.Raw,
@@ -111,9 +170,81 @@ j6tJLp07kzQoH3jOlOrHvdPJbRzeXDLz
 	//		log.Panic(err)
 	//	}
 
-	err = c.Quit()
+	msg := `Date: Mon, 23 Jun 2015 11:40:36 -0400
+From: Gopher <from@example.com>
+To: Another Gopher <to@example.com>
+Subject: Gophers at Gophercon
+Cc: aa@example.com, bb@example.com, cc@example.com
+Cc: caa@example.com, cbb@example.com, ccc@example.com
+Bcc: baa@example.com, bbb@example.com, bcc@example.com
+Bcc: bbaa@example.com, bbbb@example.com, bbcc@example.com
+Message-ID: <ex@example.org>
+Organization: Example
+
+Message body
+`
+
+	r := strings.NewReader(msg)
+	m, err := mail.ReadMessage(r)
 	if err != nil {
-		log.Panic(err)
+		log.Fatal(err)
 	}
 
+	header := m.Header
+
+	fromaddress := header.Get("From")
+	toaddresses := strings.Split(header.Get("To"), ",")
+	toaddresses = append(toaddresses, strings.Split(header.Get("Cc"), ",")...)
+	toaddresses = append(toaddresses, strings.Split(header.Get("Bcc"), ",")...)
+
+	fmt.Println("Send email from:", fromaddress)
+	fmt.Println("Send email to:", strings.Join(toaddresses, ", "))
+	fmt.Println("--")
+
+	fmt.Println("-- Email")
+	for k, v := range header {
+		if "Bcc" != k {
+			for _, h := range v {
+				fmt.Printf("%s: %s\n", k, h)
+			}
+		}
+	}
+	fmt.Println("")
+	body, err := ioutil.ReadAll(m.Body)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Printf("%s", body)
+	fmt.Println("--")
+
+	//
+	//	err = c.Mail(fromaddress)
+	//	if err != nil {
+	//		log.Panic(err)
+	//	}
+	//
+	//	err = c.Rcpt(toaddress)
+	//	if err != nil {
+	//		log.Panic(err)
+	//	}
+	//
+	//	w, err := c.Data()
+	//	if err != nil {
+	//		log.Panic(err)
+	//	}
+	//
+	//	_, err = w.Write([]byte(message))
+	//	if err != nil {
+	//		log.Panic(err)
+	//	}
+	//
+	//	err = w.Close()
+	//	if err != nil {
+	//		log.Panic(err)
+	//	}
+	//
+	//	err = c.Quit()
+	//	if err != nil {
+	//		log.Panic(err)
+	//	}
 }
