@@ -23,7 +23,7 @@ func userHomeDir() string {
 	return os.Getenv("HOME")
 }
 
-var defaultConfigFile = path.Join(userHomeDir(), "config", "gsmtp", "init.toml")
+var defaultConfigFile = path.Join(userHomeDir(), ".config", "gsmtp", "init.toml")
 
 var configFile = flag.String("config", defaultConfigFile,
 	"File to read configuration from")
