@@ -32,6 +32,7 @@ var defaultConfigFile = path.Join(userHomeDir(), ".config", "gsmtp", "init.toml"
 var configFile = flag.String("config", defaultConfigFile,
 	"File to read configuration from")
 var debug = flag.Bool("debug", false, "Verbose")
+var _ = flag.Bool("oi", false, "Ignored sendmail flag")
 
 type server struct {
 	Addr string `toml:"address,omitempty"`
