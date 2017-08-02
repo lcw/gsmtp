@@ -41,7 +41,8 @@ var serverinfo = flag.Bool("serverinfo", false, "Print server info and quit")
 var _ = flag.Bool("oi", false, "Ignored sendmail flag")
 
 type server struct {
-	Addr string `toml:"address,omitempty"`
+	Addr    string `toml:"address,omitempty"`
+	RootPEM string `toml:"rootPEM,omitempty"`
 }
 type servers map[string]server
 
@@ -127,7 +128,11 @@ func main() {
 	if *debug {
 		fmt.Printf("\nConfig:\n")
 		for name, s := range config {
-			fmt.Printf("  Server: %s (addr: %s)\n", name, s.Addr)
+			fmt.Printf("  Server: %s\n", name)
+			fmt.Printf("    Addr: %s\n", s.Addr)
+			if s.RootPEM != "" {
+				fmt.Printf("    RootPEM:\n%s\n", s.RootPEM)
+			}
 		}
 		fmt.Printf("\n")
 	}
