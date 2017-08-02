@@ -31,7 +31,7 @@ var defaultConfigFile = path.Join(userHomeDir(), ".config", "gsmtp", "init.toml"
 
 var configFile = flag.String("config", defaultConfigFile,
 	"File to read configuration from")
-var dumpConfigFlag = flag.Bool("dump-config", false, "Read and print configfile")
+var verbose = flag.Bool("v", false, "Verbose")
 
 type server struct {
 	Addr string `toml:"address,omitempty"`
@@ -44,10 +44,12 @@ func main() {
 		fmt.Fprintf(os.Stderr, "Warning: unused arguments %v\n", flag.Args())
 	}
 
-	println("Flags:")
-	println("  Reading config file:", *configFile)
-	println("  Dump Config:", *dumpConfigFlag)
-	println("")
+	if *verbose {
+		println("Flags:")
+		println("  Verbose:", *verbose)
+		println("  Reading config file:", *configFile)
+		println("")
+	}
 
 	configToml, err := ioutil.ReadFile(*configFile)
 	if err != nil {
@@ -59,7 +61,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	if *dumpConfigFlag {
+	if *verbose {
 		fmt.Printf("\nConfig:\n")
 		for name, s := range config {
 			fmt.Printf("  Server: %s (addr: %s)\n", name, s.Addr)
