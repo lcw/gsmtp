@@ -66,6 +66,11 @@ func printServerInfo(config servers) {
 		if err != nil {
 			log.Panic(err)
 		}
+		defer func() {
+			if err := c.Close(); err != nil {
+				log.Panic(err)
+			}
+		}()
 
 		c.StartTLS(tlsconfig)
 
