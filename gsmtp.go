@@ -161,6 +161,10 @@ func printServerInfo(config gsmtpConfig) error {
 	return nil
 }
 
+// sendMail was adapted from the net/smtp go standard library which is governed
+// by a BSD-style license.
+//
+// Copyright 2010 The Go Authors. All rights reserved.
 func sendMail(rootPEM string, addr string, auth smtp.Auth,
 	from string, to []string, msg []byte) error {
 
