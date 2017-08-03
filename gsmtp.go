@@ -39,12 +39,12 @@ func userHomeDir() string {
 
 var defaultConfigFile = path.Join(userHomeDir(), ".config", "gsmtp", "init.toml")
 
-var configFile = flag.String("config", defaultConfigFile,
+var configFileFlag = flag.String("config", defaultConfigFile,
 	"File to read configuration from")
-var from = flag.String("f", "", "From address to select server")
-var account = flag.String("account", "", "Server to send email through")
-var debug = flag.Bool("debug", false, "Verbose")
-var serverinfo = flag.Bool("serverinfo", false, "Print server info and quit")
+var fromFlag = flag.String("f", "", "From address to select server")
+var accountFlag = flag.String("account", "", "Server to send email through")
+var debugFlag = flag.Bool("debug", false, "Verbose")
+var serverinfoFlag = flag.Bool("serverinfo", false, "Print server info and quit")
 var _ = flag.Bool("oi", false, "Ignored sendmail flag")
 
 type server struct {
@@ -126,14 +126,14 @@ func main() {
 		fmt.Fprintf(os.Stderr, "Warning: unused arguments %v\n", flag.Args())
 	}
 
-	if *debug {
+	if *debugFlag {
 		println("Flags:")
-		println("  Debug:", *debug)
-		println("  Reading config file:", *configFile)
+		println("  Debug:", *debugFlag)
+		println("  Reading config file:", *configFileFlag)
 		println("")
 	}
 
-	configToml, err := ioutil.ReadFile(*configFile)
+	configToml, err := ioutil.ReadFile(*configFileFlag)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -143,7 +143,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	if *debug {
+	if *debugFlag {
 		fmt.Printf("\nConfig:\n")
 		fmt.Printf("  Default server: %s\n", config.DefaultServer)
 		for name, s := range config.Servers {
@@ -157,29 +157,29 @@ func main() {
 		fmt.Printf("\n")
 	}
 
-	if *serverinfo {
+	if *serverinfoFlag {
 		printServerInfo(config)
 		os.Exit(0)
 	}
 
 	// Set the account
-	if *account == "" {
-		*account = config.DefaultServer
-		if *from != "" {
+	if *accountFlag == "" {
+		*accountFlag = config.DefaultServer
+		if *fromFlag != "" {
 			for name, s := range config.Servers {
-				if strings.Compare(s.From, *from) == 0 {
-					*account = name
+				if strings.Compare(s.From, *fromFlag) == 0 {
+					*accountFlag = name
 					break
 				}
 			}
 		}
 	}
 
-	if *debug {
-		fmt.Printf("\nSelected Account:%s\n", *account)
+	if *debugFlag {
+		fmt.Printf("\nSelected Account:%s\n", *accountFlag)
 	}
 
-	s := config.Servers[*account]
+	s := config.Servers[*accountFlag]
 
 	host, _, err := net.SplitHostPort(s.Addr)
 	if err != nil {
@@ -191,7 +191,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	if *debug {
+	if *debugFlag {
 		fmt.Printf("The host is: %s\n", host)
 		fmt.Printf("The password is: %s\n", password)
 	}
@@ -248,7 +248,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	if *debug {
+	if *debugFlag {
 		fmt.Println("Send email from:", f)
 		fmt.Println("Send email to:")
 		for _, v := range t {
