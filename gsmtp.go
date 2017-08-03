@@ -161,7 +161,9 @@ func printServerInfo(config gsmtpConfig) error {
 	return nil
 }
 
-func sendMail(rootPEM string, addr string, a smtp.Auth, from string, to []string, msg []byte) error {
+func sendMail(rootPEM string, addr string, auth smtp.Auth,
+	from string, to []string, msg []byte) error {
+
 	host, _, err := net.SplitHostPort(addr)
 	if err != nil {
 		return err
@@ -193,7 +195,7 @@ func sendMail(rootPEM string, addr string, a smtp.Auth, from string, to []string
 		return err
 	}
 
-	if err = c.Auth(a); err != nil {
+	if err = c.Auth(auth); err != nil {
 		return err
 	}
 
