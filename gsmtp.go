@@ -11,6 +11,7 @@ import (
 	"net"
 	"net/smtp"
 	"os"
+	"os/exec"
 	"path"
 	"runtime"
 	"strings"
@@ -44,9 +45,10 @@ var serverinfo = flag.Bool("serverinfo", false, "Print server info and quit")
 var _ = flag.Bool("oi", false, "Ignored sendmail flag")
 
 type server struct {
-	Addr    string `toml:"address,omitempty"`
-	From    string `toml:"from"`
-	RootPEM string `toml:"rootPEM,omitempty"`
+	Addr     string   `toml:"address,omitempty"`
+	From     string   `toml:"from"`
+	PassEval []string `toml:"passwordeval"`
+	RootPEM  string   `toml:"rootPEM,omitempty"`
 }
 type gsmtpConfig struct {
 	DefaultServer string `toml:"default"`
@@ -171,6 +173,16 @@ func main() {
 
 	if *debug {
 		fmt.Printf("\nSelected Account:%s\n", *account)
+	}
+
+	s := config.Servers[*account]
+
+	password, err := exec.Command(s.PassEval[0], s.PassEval[1:]...).Output()
+	if err != nil {
+		log.Fatal(err)
+	}
+	if *debug {
+		fmt.Printf("The password is: %s\n", password)
 	}
 
 	os.Exit(1)
