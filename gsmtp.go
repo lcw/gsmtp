@@ -222,11 +222,42 @@ func sendMail(rootPEM string, addr string, auth smtp.Auth,
 	return c.Quit()
 }
 
-func getAuth(s server) (smtp.Auth, error) {
-	host, _, err := net.SplitHostPort(s.Addr)
-	if err != nil {
-		return nil, err
+// LoginAuth was taken from
+//
+// https://gist.github.com/andelf/5118732
+//
+// and has the following license:
+//
+// MIT license (c) andelf 2013
+
+type loginAuth struct {
+	username, password string
+}
+
+// LoginAuth provides LOGIN authentication for SMTP
+func LoginAuth(username, password string) smtp.Auth {
+	return &loginAuth{username, password}
+}
+
+func (a *loginAuth) Start(server *smtp.ServerInfo) (string, []byte, error) {
+	return "LOGIN", []byte{}, nil
+}
+
+func (a *loginAuth) Next(fromServer []byte, more bool) ([]byte, error) {
+	if more {
+		switch string(fromServer) {
+		case "Username:":
+			return []byte(a.username), nil
+		case "Password:":
+			return []byte(a.password), nil
+		default:
+			return nil, errors.New("Unkown fromServer")
+		}
 	}
+	return nil, nil
+}
+
+func getAuth(s server) (smtp.Auth, error) {
 
 	out, err := exec.Command(s.PassEval[0], s.PassEval[1:]...).Output()
 	if err != nil {
@@ -234,7 +265,13 @@ func getAuth(s server) (smtp.Auth, error) {
 	}
 	password := strings.TrimSpace(string(out))
 
-	auth := smtp.PlainAuth("", s.Username, password, host)
+	auth := LoginAuth(s.Username, password)
+
+	//	host, _, err := net.SplitHostPort(s.Addr)
+	//	if err != nil {
+	//		return nil, err
+	//	}
+	// 	auth := smtp.PlainAuth("", s.Username, password, host)
 
 	return auth, nil
 }
