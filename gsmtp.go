@@ -42,12 +42,16 @@ var _ = flag.Bool("oi", false, "Ignored sendmail flag")
 
 type server struct {
 	Addr    string `toml:"address,omitempty"`
+	From    string `toml:"from"`
 	RootPEM string `toml:"rootPEM,omitempty"`
 }
-type servers map[string]server
+type gsmtpConfig struct {
+	DefaultServer string `toml:"default"`
+	Servers       map[string]server
+}
 
-func printServerInfo(config servers) {
-	for name, s := range config {
+func printServerInfo(config gsmtpConfig) {
+	for name, s := range config.Servers {
 		fmt.Printf("\n------------------------------------------------------------------------\n")
 		fmt.Printf("  Server info for: %s\n", name)
 		fmt.Printf("------------------------------------------------------------------------\n")
@@ -125,16 +129,18 @@ func main() {
 		log.Fatal(err)
 	}
 
-	var config servers
+	var config gsmtpConfig
 	if _, err := toml.Decode(string(configToml), &config); err != nil {
 		log.Fatal(err)
 	}
 
 	if *debug {
 		fmt.Printf("\nConfig:\n")
-		for name, s := range config {
+		fmt.Printf("  Default server: %s\n", config.DefaultServer)
+		for name, s := range config.Servers {
 			fmt.Printf("  Server: %s\n", name)
 			fmt.Printf("    Addr: %s\n", s.Addr)
+			fmt.Printf("    From: %s\n", s.From)
 			if s.RootPEM != "" {
 				fmt.Printf("    RootPEM:\n%s\n", s.RootPEM)
 			}
