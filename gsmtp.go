@@ -187,6 +187,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	if *debug {
 		fmt.Printf("The host is: %s\n", host)
 		fmt.Printf("The password is: %s\n", password)
