@@ -13,6 +13,7 @@ import (
 	"os"
 	"path"
 	"runtime"
+	"strings"
 
 	"github.com/BurntSushi/toml"
 )
@@ -36,6 +37,8 @@ var defaultConfigFile = path.Join(userHomeDir(), ".config", "gsmtp", "init.toml"
 
 var configFile = flag.String("config", defaultConfigFile,
 	"File to read configuration from")
+var from = flag.String("f", "", "From address to select server")
+var account = flag.String("account", "", "Server to send email through")
 var debug = flag.Bool("debug", false, "Verbose")
 var serverinfo = flag.Bool("serverinfo", false, "Print server info and quit")
 var _ = flag.Bool("oi", false, "Ignored sendmail flag")
@@ -151,6 +154,23 @@ func main() {
 	if *serverinfo {
 		printServerInfo(config)
 		os.Exit(0)
+	}
+
+	// Set the account
+	if *account == "" {
+		*account = config.DefaultServer
+		if *from != "" {
+			for name, s := range config.Servers {
+				if strings.Compare(s.From, *from) == 0 {
+					*account = name
+					break
+				}
+			}
+		}
+	}
+
+	if *debug {
+		fmt.Printf("\nSelected Account:%s\n", *account)
 	}
 
 	os.Exit(1)
