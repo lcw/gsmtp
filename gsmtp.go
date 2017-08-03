@@ -364,5 +364,10 @@ func main() {
 		fmt.Printf("Mail:\"\"\"\n%s\"\"\"\n", string(msg))
 	}
 
-	os.Exit(1)
+	err = sendMail(s.RootPEM, s.Addr, auth, from, to, msg)
+	if err != nil {
+		log.Panic(err)
+	}
+
+	log.Printf("[SENT] from:%s to:%s", from, strings.Join(to, ", "))
 }
