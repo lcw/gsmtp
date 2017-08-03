@@ -1,6 +1,8 @@
 package main
 
 import (
+	"bufio"
+	"bytes"
 	"crypto/sha256"
 	"crypto/tls"
 	"encoding/pem"
@@ -9,6 +11,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net"
+	"net/mail"
 	"net/smtp"
 	"os"
 	"os/exec"
@@ -191,6 +194,65 @@ func main() {
 	if *debug {
 		fmt.Printf("The host is: %s\n", host)
 		fmt.Printf("The password is: %s\n", password)
+	}
+
+	// parse email
+	r := bufio.NewReader(os.Stdin)
+	m, err := mail.ReadMessage(r)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	f := m.Header.Get("From")
+
+	// Build a list of names to send email to
+	l := ""
+	for k, v := range m.Header {
+		if "To" == k || "Cc" == k || "Bcc" == k {
+			if l == "" {
+				l = strings.Join(v, ",")
+			} else {
+				l += ", " + strings.Join(v, ",")
+			}
+		}
+	}
+
+	// parse the to addresses
+	t, err := mail.ParseAddressList(l)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	//  build the email to send (with the Bcc headers removed)
+	var e bytes.Buffer
+
+	for k, v := range m.Header {
+		if "Bcc" != k {
+			for _, h := range v {
+				_, err := e.WriteString(fmt.Sprintf("%s: %s\n", k, h))
+				if err != nil {
+					log.Fatal(err)
+				}
+			}
+		}
+	}
+	fmt.Println("")
+	_, err = e.ReadFrom(m.Body)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if *debug {
+		fmt.Println("Send email from:", f)
+		fmt.Println("Send email to:")
+		for _, v := range t {
+			fmt.Println(v.Name, v.Address)
+		}
+		fmt.Println("--")
+
+		fmt.Println("-- Email")
+		fmt.Println(e.String())
+		fmt.Println("--")
 	}
 
 	os.Exit(1)
