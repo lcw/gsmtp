@@ -198,7 +198,7 @@ func main() {
 	log.SetOutput(logFile)
 
 	if len(flag.Args()) > 0 {
-		fmt.Fprintf(os.Stderr, "Warning: unused arguments %v\n", flag.Args())
+		log.Printf("Warning: unused arguments %v\n", flag.Args())
 	}
 
 	if *debugFlag {
