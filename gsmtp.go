@@ -269,9 +269,18 @@ func main() {
 		log.Fatal(err)
 	}
 
+	sn := getServerName(config)
+	s := config.Servers[sn]
+	auth, err := getAuth(s)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	if *debugFlag {
 		printFlags()
 		printConfig(config)
+		println("Selected Account:", sn)
+		println("Auth:", auth)
 	}
 
 	if *serverinfoFlag {
@@ -281,22 +290,6 @@ func main() {
 		} else {
 			os.Exit(0)
 		}
-	}
-
-	sn := getServerName(config)
-	if *debugFlag {
-		fmt.Printf("\nSelected Account:%s\n", sn)
-	}
-
-	s := config.Servers[sn]
-
-	auth, err := getAuth(s)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	if *debugFlag {
-		println("Auth:", auth)
 	}
 
 	// parse email
