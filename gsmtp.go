@@ -130,6 +130,61 @@ func printServerInfo(config gsmtpConfig) error {
 	return nil
 }
 
+func sendMail(rootPEM string, addr string, a smtp.Auth, from string, to []string, msg []byte) error {
+	host, _, err := net.SplitHostPort(addr)
+	if err != nil {
+		return err
+	}
+
+	roots := x509.NewCertPool()
+	ok := roots.AppendCertsFromPEM([]byte(rootPEM))
+	if !ok {
+		return errors.New("Failed to parse root certificate")
+	}
+
+	config := &tls.Config{
+		ServerName: host,
+		RootCAs:    roots,
+	}
+
+	c, err := smtp.Dial(addr)
+	if err != nil {
+		return err
+	}
+	defer c.Close()
+
+	if ok, _ := c.Extension("STARTTLS"); ok {
+		if err = c.StartTLS(config); err != nil {
+			return err
+		}
+	} else {
+		err = errors.New("Server does not have the extension STARTTLS")
+		return err
+	}
+
+	if err = c.Mail(from); err != nil {
+		return err
+	}
+	for _, addr := range to {
+		if err = c.Rcpt(addr); err != nil {
+			return err
+		}
+	}
+	w, err := c.Data()
+	if err != nil {
+		return err
+	}
+	_, err = w.Write(msg)
+	if err != nil {
+		return err
+	}
+	err = w.Close()
+	if err != nil {
+		return err
+	}
+	return c.Quit()
+}
+
 func main() {
 	flag.Parse()
 	if len(flag.Args()) > 0 {
