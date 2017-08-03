@@ -10,6 +10,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"net"
@@ -246,6 +247,65 @@ func getServerName(config gsmtpConfig) string {
 	return n
 }
 
+func parseMail(r io.Reader) (string, []string, []byte, error) {
+	m, err := mail.ReadMessage(r)
+	if err != nil {
+		return "", nil, nil, err
+	}
+
+	// Parse the from address
+	f, err := mail.ParseAddress(m.Header.Get("From"))
+	if err != nil {
+		return "", nil, nil, err
+	}
+	from := f.Address
+
+	// Build a list of names to send email to
+	l := ""
+	for k, v := range m.Header {
+		if "To" == k || "Cc" == k || "Bcc" == k {
+			if l == "" {
+				l = strings.Join(v, ",")
+			} else {
+				l += ", " + strings.Join(v, ",")
+			}
+		}
+	}
+
+	// Parse the to addresses
+	tal, err := mail.ParseAddressList(l)
+	if err != nil {
+		return "", nil, nil, err
+	}
+	to := make([]string, len(tal))
+	for i, t := range tal {
+		to[i] = t.Address
+	}
+
+	// Build the email to send (with the Bcc headers removed)
+	var msg bytes.Buffer
+	for k, v := range m.Header {
+		if "Bcc" != k {
+			for _, h := range v {
+				_, err := msg.WriteString(fmt.Sprintf("%s: %s\n", k, h))
+				if err != nil {
+					return "", nil, nil, err
+				}
+			}
+		}
+	}
+	_, err = msg.WriteString("\n")
+	if err != nil {
+		return "", nil, nil, err
+	}
+	_, err = msg.ReadFrom(m.Body)
+	if err != nil {
+		return "", nil, nil, err
+	}
+
+	return from, to, msg.Bytes(), err
+}
+
 func main() {
 	flag.Parse()
 
@@ -292,69 +352,16 @@ func main() {
 		}
 	}
 
-	// parse email
 	r := bufio.NewReader(os.Stdin)
-	m, err := mail.ReadMessage(r)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	f, err := mail.ParseAddress(m.Header.Get("From"))
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	// Build a list of names to send email to
-	l := ""
-	for k, v := range m.Header {
-		if "To" == k || "Cc" == k || "Bcc" == k {
-			if l == "" {
-				l = strings.Join(v, ",")
-			} else {
-				l += ", " + strings.Join(v, ",")
-			}
-		}
-	}
-
-	// parse the to addresses
-	t, err := mail.ParseAddressList(l)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	//  build the email to send (with the Bcc headers removed)
-	var e bytes.Buffer
-
-	for k, v := range m.Header {
-		if "Bcc" != k {
-			for _, h := range v {
-				_, err := e.WriteString(fmt.Sprintf("%s: %s\n", k, h))
-				if err != nil {
-					log.Fatal(err)
-				}
-			}
-		}
-	}
-	_, err = e.WriteString("\n")
-	if err != nil {
-		log.Fatal(err)
-	}
-	_, err = e.ReadFrom(m.Body)
+	from, to, msg, err := parseMail(r)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	if *debugFlag {
-		fmt.Println("Send email from:", f)
-		fmt.Println("Send email to:")
-		for _, v := range t {
-			fmt.Println(v.Name, v.Address)
-		}
-		fmt.Println("--")
-
-		fmt.Println("-- Email")
-		fmt.Println(e.String())
-		fmt.Println("--")
+		println("Send email from:", from)
+		println("Send email to:", strings.Join(to, ", "))
+		fmt.Printf("Mail:\"\"\"\n%s\"\"\"\n", string(msg))
 	}
 
 	os.Exit(1)
