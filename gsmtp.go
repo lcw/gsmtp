@@ -230,6 +230,22 @@ func getAuth(s server) (smtp.Auth, error) {
 	return auth, nil
 }
 
+func getServerName(config gsmtpConfig) string {
+	n := *accountFlag
+	if n == "" {
+		n = config.DefaultServer
+		if *fromFlag != "" {
+			for name, s := range config.Servers {
+				if strings.Compare(s.From, *fromFlag) == 0 {
+					n = name
+					break
+				}
+			}
+		}
+	}
+	return n
+}
+
 func main() {
 	flag.Parse()
 
@@ -267,24 +283,12 @@ func main() {
 		}
 	}
 
-	// Set the account
-	if *accountFlag == "" {
-		*accountFlag = config.DefaultServer
-		if *fromFlag != "" {
-			for name, s := range config.Servers {
-				if strings.Compare(s.From, *fromFlag) == 0 {
-					*accountFlag = name
-					break
-				}
-			}
-		}
-	}
-
+	sn := getServerName(config)
 	if *debugFlag {
-		fmt.Printf("\nSelected Account:%s\n", *accountFlag)
+		fmt.Printf("\nSelected Account:%s\n", sn)
 	}
 
-	s := config.Servers[*accountFlag]
+	s := config.Servers[sn]
 
 	auth, err := getAuth(s)
 	if err != nil {
