@@ -203,7 +203,10 @@ func main() {
 		log.Fatal(err)
 	}
 
-	f := m.Header.Get("From")
+	f, err := mail.ParseAddress(m.Header.Get("From"))
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	// Build a list of names to send email to
 	l := ""
