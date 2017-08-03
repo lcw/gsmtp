@@ -40,9 +40,12 @@ func userHomeDir() string {
 }
 
 var defaultConfigFile = path.Join(userHomeDir(), ".config", "gsmtp", "init.toml")
+var defaultLogFile = path.Join(userHomeDir(), ".gsmtp.log")
 
 var configFileFlag = flag.String("config", defaultConfigFile,
 	"File to read configuration from")
+var logFileFlag = flag.String("logfile", defaultLogFile,
+	"File to write log to")
 var fromFlag = flag.String("f", "", "From address to select server")
 var accountFlag = flag.String("account", "", "Server to send email through")
 var debugFlag = flag.Bool("debug", false, "Verbose")
@@ -187,6 +190,13 @@ func sendMail(rootPEM string, addr string, a smtp.Auth, from string, to []string
 
 func main() {
 	flag.Parse()
+
+	logFile, err := os.OpenFile(*logFileFlag, os.O_CREATE|os.O_APPEND|os.O_RDWR, 0600)
+	if err != nil {
+		panic(err)
+	}
+	log.SetOutput(logFile)
+
 	if len(flag.Args()) > 0 {
 		fmt.Fprintf(os.Stderr, "Warning: unused arguments %v\n", flag.Args())
 	}
