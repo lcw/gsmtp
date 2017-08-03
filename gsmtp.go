@@ -193,6 +193,10 @@ func sendMail(rootPEM string, addr string, a smtp.Auth, from string, to []string
 		return err
 	}
 
+	if err = c.Auth(a); err != nil {
+		return err
+	}
+
 	if err = c.Mail(from); err != nil {
 		return err
 	}
