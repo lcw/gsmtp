@@ -5,7 +5,9 @@ import (
 	"bytes"
 	"crypto/sha256"
 	"crypto/tls"
+	"crypto/x509"
 	"encoding/pem"
+	"errors"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -59,7 +61,7 @@ type gsmtpConfig struct {
 	Servers       map[string]server
 }
 
-func printServerInfo(config gsmtpConfig) {
+func printServerInfo(config gsmtpConfig) error {
 	for name, s := range config.Servers {
 		fmt.Printf("\n------------------------------------------------------------------------\n")
 		fmt.Printf("  Server info for: %s\n", name)
@@ -67,29 +69,31 @@ func printServerInfo(config gsmtpConfig) {
 
 		host, _, err := net.SplitHostPort(s.Addr)
 		if err != nil {
-			log.Panic(err)
+			return err
 		}
 
-		tlsconfig := &tls.Config{
+		config := &tls.Config{
 			InsecureSkipVerify: true,
 			ServerName:         host,
 		}
 
 		c, err := smtp.Dial(s.Addr)
 		if err != nil {
-			log.Panic(err)
+			return err
 		}
-		defer func() {
-			if err := c.Close(); err != nil {
-				log.Panic(err)
-			}
-		}()
+		defer c.Close()
 
-		c.StartTLS(tlsconfig)
+		if ok, _ := c.Extension("STARTTLS"); ok {
+			if err = c.StartTLS(config); err != nil {
+				return err
+			}
+		} else {
+			return errors.New("Server does not have the extension STARTTLS")
+		}
 
 		state, ok := c.TLSConnectionState()
 		if !ok {
-			log.Panic("STARTTLS Failed")
+			return errors.New("Problem getting TLS state")
 		}
 
 		for _, cert := range state.PeerCertificates {
@@ -116,8 +120,14 @@ func printServerInfo(config gsmtpConfig) {
 			fmt.Printf("\n")
 		}
 
+		if err = c.Quit(); err != nil {
+			return err
+		}
+
 		fmt.Printf("------------------------------------------------------------------------\n\n\n")
 	}
+
+	return nil
 }
 
 func main() {
@@ -158,8 +168,12 @@ func main() {
 	}
 
 	if *serverinfoFlag {
-		printServerInfo(config)
-		os.Exit(0)
+		err := printServerInfo(config)
+		if err != nil {
+			log.Panic(err)
+		} else {
+			os.Exit(0)
+		}
 	}
 
 	// Set the account
