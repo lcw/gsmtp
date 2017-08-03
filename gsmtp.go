@@ -178,11 +178,17 @@ func main() {
 
 	s := config.Servers[*account]
 
+	host, _, err := net.SplitHostPort(s.Addr)
+	if err != nil {
+		log.Panic(err)
+	}
+
 	password, err := exec.Command(s.PassEval[0], s.PassEval[1:]...).Output()
 	if err != nil {
 		log.Fatal(err)
 	}
 	if *debug {
+		fmt.Printf("The host is: %s\n", host)
 		fmt.Printf("The password is: %s\n", password)
 	}
 
