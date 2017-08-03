@@ -226,12 +226,13 @@ func getAuth(s server) (smtp.Auth, error) {
 		return nil, err
 	}
 
-	password, err := exec.Command(s.PassEval[0], s.PassEval[1:]...).Output()
+	out, err := exec.Command(s.PassEval[0], s.PassEval[1:]...).Output()
 	if err != nil {
 		return nil, err
 	}
+	password := strings.TrimSpace(string(out))
 
-	auth := smtp.PlainAuth("", s.Username, string(password), host)
+	auth := smtp.PlainAuth("", s.Username, password, host)
 
 	return auth, nil
 }
