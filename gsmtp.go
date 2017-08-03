@@ -321,12 +321,12 @@ func main() {
 
 	configToml, err := ioutil.ReadFile(*configFileFlag)
 	if err != nil {
-		log.Fatal(err)
+		log.Panic(err)
 	}
 
 	var config gsmtpConfig
 	if _, err := toml.Decode(string(configToml), &config); err != nil {
-		log.Fatal(err)
+		log.Panic(err)
 	}
 
 	if *debugFlag {
@@ -347,13 +347,13 @@ func main() {
 	s := config.Servers[sn]
 	auth, err := getAuth(s)
 	if err != nil {
-		log.Fatal(err)
+		log.Panic(err)
 	}
 
 	r := bufio.NewReader(os.Stdin)
 	from, to, msg, err := parseMail(r)
 	if err != nil {
-		log.Fatal(err)
+		log.Panic(err)
 	}
 
 	if *debugFlag {
