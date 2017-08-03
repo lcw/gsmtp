@@ -52,6 +52,7 @@ var accountFlag = flag.String("account", "", "Server to send email through")
 var debugFlag = flag.Bool("debug", false, "Verbose")
 var serverinfoFlag = flag.Bool("serverinfo", false, "Print server info and quit")
 var _ = flag.Bool("oi", false, "Ignored sendmail flag")
+var _ = flag.Bool("t", false, "Ignored sendmail flag")
 
 func printFlags() {
 	println("")
