@@ -214,6 +214,22 @@ func sendMail(rootPEM string, addr string, a smtp.Auth, from string, to []string
 	return c.Quit()
 }
 
+func getAuth(s server) (smtp.Auth, error) {
+	host, _, err := net.SplitHostPort(s.Addr)
+	if err != nil {
+		return nil, err
+	}
+
+	password, err := exec.Command(s.PassEval[0], s.PassEval[1:]...).Output()
+	if err != nil {
+		return nil, err
+	}
+
+	auth := smtp.PlainAuth("", s.Username, string(password), host)
+
+	return auth, nil
+}
+
 func main() {
 	flag.Parse()
 
@@ -270,19 +286,13 @@ func main() {
 
 	s := config.Servers[*accountFlag]
 
-	host, _, err := net.SplitHostPort(s.Addr)
-	if err != nil {
-		log.Panic(err)
-	}
-
-	password, err := exec.Command(s.PassEval[0], s.PassEval[1:]...).Output()
+	auth, err := getAuth(s)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	if *debugFlag {
-		fmt.Printf("The host is: %s\n", host)
-		fmt.Printf("The password is: %s\n", password)
+		println("Auth:", auth)
 	}
 
 	// parse email
