@@ -52,6 +52,17 @@ var debugFlag = flag.Bool("debug", false, "Verbose")
 var serverinfoFlag = flag.Bool("serverinfo", false, "Print server info and quit")
 var _ = flag.Bool("oi", false, "Ignored sendmail flag")
 
+func printFlags() {
+	println("")
+	println("Flags:")
+	println("     account:", *accountFlag)
+	println("      config:", *configFileFlag)
+	println("       debug:", *debugFlag)
+	println("           f:", *fromFlag)
+	println("     logfile:", *logFileFlag)
+	println("  serverinfo:", *serverinfoFlag)
+}
+
 type server struct {
 	Addr     string   `toml:"address,omitempty"`
 	From     string   `toml:"from"`
@@ -62,6 +73,21 @@ type server struct {
 type gsmtpConfig struct {
 	DefaultServer string `toml:"default"`
 	Servers       map[string]server
+}
+
+func printConfig(config gsmtpConfig) {
+	println("")
+	println("Config:")
+	println("  Default server:", config.DefaultServer)
+	for name, s := range config.Servers {
+		println("  ~~~~~~~~~")
+		println("    Server:", name)
+		println("      Addr:", s.Addr)
+		println("      From:", s.From)
+		println("  Username:", s.Username)
+		println("  PassEval:", s.PassEval)
+		println("   RootPEM:\n", s.RootPEM)
+	}
 }
 
 func printServerInfo(config gsmtpConfig) error {
@@ -201,13 +227,6 @@ func main() {
 		log.Printf("Warning: unused arguments %v\n", flag.Args())
 	}
 
-	if *debugFlag {
-		println("Flags:")
-		println("  Debug:", *debugFlag)
-		println("  Reading config file:", *configFileFlag)
-		println("")
-	}
-
 	configToml, err := ioutil.ReadFile(*configFileFlag)
 	if err != nil {
 		log.Fatal(err)
@@ -219,17 +238,8 @@ func main() {
 	}
 
 	if *debugFlag {
-		fmt.Printf("\nConfig:\n")
-		fmt.Printf("  Default server: %s\n", config.DefaultServer)
-		for name, s := range config.Servers {
-			fmt.Printf("  Server: %s\n", name)
-			fmt.Printf("    Addr: %s\n", s.Addr)
-			fmt.Printf("    From: %s\n", s.From)
-			if s.RootPEM != "" {
-				fmt.Printf("    RootPEM:\n%s\n", s.RootPEM)
-			}
-		}
-		fmt.Printf("\n")
+		printFlags()
+		printConfig(config)
 	}
 
 	if *serverinfoFlag {
