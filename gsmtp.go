@@ -47,6 +47,7 @@ var _ = flag.Bool("oi", false, "Ignored sendmail flag")
 type server struct {
 	Addr     string   `toml:"address,omitempty"`
 	From     string   `toml:"from"`
+	Username string   `toml:"username"`
 	PassEval []string `toml:"passwordeval"`
 	RootPEM  string   `toml:"rootPEM,omitempty"`
 }
