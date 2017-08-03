@@ -236,7 +236,10 @@ func main() {
 			}
 		}
 	}
-	fmt.Println("")
+	_, err = e.WriteString("\n")
+	if err != nil {
+		log.Fatal(err)
+	}
 	_, err = e.ReadFrom(m.Body)
 	if err != nil {
 		log.Fatal(err)
