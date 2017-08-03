@@ -329,18 +329,9 @@ func main() {
 		log.Fatal(err)
 	}
 
-	sn := getServerName(config)
-	s := config.Servers[sn]
-	auth, err := getAuth(s)
-	if err != nil {
-		log.Fatal(err)
-	}
-
 	if *debugFlag {
 		printFlags()
 		printConfig(config)
-		println("Selected Account:", sn)
-		println("Auth:", auth)
 	}
 
 	if *serverinfoFlag {
@@ -352,6 +343,13 @@ func main() {
 		}
 	}
 
+	sn := getServerName(config)
+	s := config.Servers[sn]
+	auth, err := getAuth(s)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	r := bufio.NewReader(os.Stdin)
 	from, to, msg, err := parseMail(r)
 	if err != nil {
@@ -359,6 +357,8 @@ func main() {
 	}
 
 	if *debugFlag {
+		println("Selected Account:", sn)
+		println("Auth:", auth)
 		println("Send email from:", from)
 		println("Send email to:", strings.Join(to, ", "))
 		fmt.Printf("Mail:\"\"\"\n%s\"\"\"\n", string(msg))
