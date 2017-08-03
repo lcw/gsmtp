@@ -339,6 +339,7 @@ func main() {
 		if err != nil {
 			log.Panic(err)
 		} else {
+			log.Println("Got server info")
 			os.Exit(0)
 		}
 	}
