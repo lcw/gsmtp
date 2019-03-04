@@ -280,16 +280,20 @@ func getAuth(s server) (smtp.Auth, error) {
 	return auth, nil
 }
 
-func getServerName(config gsmtpConfig) string {
+func getServerName(config gsmtpConfig, from string) string {
 	n := *accountFlag
 	if n == "" {
 		n = config.DefaultServer
+		f := ""
 		if *fromFlag != "" {
-			for name, s := range config.Servers {
-				if strings.Compare(s.From, *fromFlag) == 0 {
-					n = name
-					break
-				}
+			f = *fromFlag
+		} else {
+			f = from
+		}
+		for name, s := range config.Servers {
+			if strings.Compare(s.From, f) == 0 {
+				n = name
+				break
 			}
 		}
 	}
@@ -393,15 +397,15 @@ func main() {
 		}
 	}
 
-	sn := getServerName(config)
-	s := config.Servers[sn]
-	auth, err := getAuth(s)
+	r := bufio.NewReader(os.Stdin)
+	from, to, msg, err := parseMail(r)
 	if err != nil {
 		log.Panic(err)
 	}
 
-	r := bufio.NewReader(os.Stdin)
-	from, to, msg, err := parseMail(r)
+	sn := getServerName(config, from)
+	s := config.Servers[sn]
+	auth, err := getAuth(s)
 	if err != nil {
 		log.Panic(err)
 	}
